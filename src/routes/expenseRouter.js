@@ -1,0 +1,8 @@
+const express = require("express");
+const router = express.Router();
+const controller = require("../controllers/expenseController")
+
+router.get("/expenses", controller.getExpenses)
+router.post("/ai/expense", controller.addAiExpenseWithMessage)
+
+module.exports = router
