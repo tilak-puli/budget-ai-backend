@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require("express");
 const expenseRouter = require("./src/routes/expenseRouter")
 const app = express();
