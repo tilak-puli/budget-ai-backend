@@ -3,7 +3,7 @@ class Expense {
         this.description = description;
         this.amount = amount;
         this.category = category;
-        this.date = new Date(date).toLocaleDateString();
+        this.date = new Date(date);
     }
 }
 

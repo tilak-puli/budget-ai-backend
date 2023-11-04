@@ -7,8 +7,7 @@ const getExpenses = async(req, res) => {
 
   const db = getDb()
   const collection = await db.collection("expenses");
-  const expenses = await collection.find({}).toArray()
-  console.log(expenses);
+  const expenses = await collection.find({}).sort({"date"}).toArray()
 
   res.json(expenses.map((obj) => new Expense(obj)));
 };
