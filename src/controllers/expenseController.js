@@ -7,7 +7,7 @@ const getExpenses = async(req, res) => {
 
   const db = getDb()
   const collection = await db.collection("expenses");
-  const expenses = await collection.find({}).sort({"date": -1}).toArray()
+  const expenses = await collection.find({}).sort({"date": -1, "createdAt": 1}).toArray()
 
   res.json(expenses.map((obj) => new Expense(obj)));
 };
@@ -17,7 +17,7 @@ const addAiExpenseWithMessage = async (req, res) => {
   const expenseCompletion = await getCompletionForExpense(
     req?.body?.userMessage
   );
-  const expense = new Expense(expenseCompletion);
+  const expense = new Expense({...expenseCompletion, createdAt: Date.now()});
 
   console.log("adding expense + ", JSON.stringify(expense));
 
