@@ -32,7 +32,7 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
   console.log("Got api call on webhook")
   console.log(req)
 
-  res.json(req.query["hub.challenge"])
+  res.send(req.query["hub.challenge"])
 }
 
 module.exports = {
