@@ -28,7 +28,13 @@ const addAiExpenseWithMessage = async (req, res) => {
   res.json(expense);
 };
 
+const addAiExpenseFromWhatsapp = async (req, res) => {
+  console.log("Got api call on webhook")
+  console.log(req)
+}
+
 module.exports = {
   getExpenses,
   addAiExpenseWithMessage,
+  addAiExpenseFromWhatsapp
 };
