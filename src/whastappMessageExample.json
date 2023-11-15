@@ -1,0 +1,39 @@
+{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "116316734907785",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "15550274026",
+                            "phone_number_id": "167914476401345"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Tilak Puli"
+                                },
+                                "wa_id": "917893363123"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "from": "917893363123",
+                                "id": "wamid.HBgMOTE3ODkzMzYzMTIzFQIAEhggMDMxNUM1NkZCREVGQjJGODc5NzA1NTc4N0NGMjE5QkUA",
+                                "timestamp": "1700023646",
+                                "text": {
+                                    "body": "Vu"
+                                },
+                                "type": "text"
+                            }
+                        ]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}

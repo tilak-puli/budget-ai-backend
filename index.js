@@ -7,7 +7,19 @@ const PORT = 3000;
 
 app.use(express.json())
 app.use(expenseRouter)
-app.use(morgan(':method :url :status :res'))
+app.use(morgan(function (tokens, req, res) {
+  try {
+    return [
+      tokens.method(req, res),
+      tokens.url(req, res),
+      tokens.status(req, res),
+      tokens.res(req, res, 'content-length'), '-',
+      tokens['response-time'](req, res), 'ms'
+    ].join(' ')
+  } catch {
+    return 'Failed to create log'
+  }
+}))
 
 app.get("/health", (req, res) => {
   res.send("Working")

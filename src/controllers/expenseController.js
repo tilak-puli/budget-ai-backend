@@ -1,13 +1,14 @@
 const { getCompletionForExpense } = require("../ai/ai");
 const { getDb } = require("../db/conn.js");
 const Expense = require("../models/expense");
+const { send_expense_message } = require("../plugins/whatsapp.js")
 
-const getExpenses = async(req, res) => {
+const getExpenses = async (req, res) => {
   console.log("request to get expenses");
 
   const db = getDb()
   const collection = await db.collection("expenses");
-  const expenses = await collection.find({}).sort({"date": -1, "createdAt": 1}).toArray()
+  const expenses = await collection.find({}).sort({ "date": -1, "createdAt": 1 }).toArray()
 
   res.json(expenses.map((obj) => new Expense(obj)));
 };
@@ -17,7 +18,7 @@ const addAiExpenseWithMessage = async (req, res) => {
   const expenseCompletion = await getCompletionForExpense(
     req?.body?.userMessage
   );
-  const expense = new Expense({...expenseCompletion, createdAt: Date.now()});
+  const expense = new Expense({ ...expenseCompletion, createdAt: Date.now() });
 
   console.log("adding expense + ", JSON.stringify(expense));
 
@@ -34,8 +35,25 @@ const whastappVerification = async (req, res) => {
 
 
 const addAiExpenseFromWhatsapp = async (req, res) => {
-  console.log("Got message from whatsapp: " + JSON.stringify(req.body))
-  res.send(200)
+  console.log("Whatsapp message " + JSON.stringify(req.body));
+
+  if (req.body?.object === "whatsapp_business_account") {
+    const entry = req.body?.entry[0];
+    const messages = entry?.changes?.messages;
+
+    if (Array.isArray(messages)) {
+      messages.forEach(message => {
+        console.log("Message is " + message?.text?.body);
+        console.log("Message is from" + message?.from);
+
+        if (message.from) {
+          send_expense_message(message.from, new Expense("Test expense", 100, "test", new Date()))
+        }
+      })
+    }
+  }
+
+  res.sendStatus(200)
 }
 
 module.exports = {
