@@ -16,7 +16,7 @@ const createConnection = async () => {
   console.log("Connected to database")
 };
 
-createConnection();
+// createConnection();
 
 const getDb = () => {
   return db;

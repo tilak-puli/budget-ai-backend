@@ -39,7 +39,9 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
 
   if (req.body?.object === "whatsapp_business_account") {
     const entry = req.body?.entry[0];
-    const messages = entry?.changes?.messages;
+    const messages = entry?.changes?.[0]?.value?.messages;
+    console.log("entry " + JSON.stringify(entry))
+    console.log("messages " + messages)
 
     if (Array.isArray(messages)) {
       messages.forEach(message => {
