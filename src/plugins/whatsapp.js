@@ -29,7 +29,7 @@ function createMessageConfig(recipient_number, expense) {
             },
             {
               type: "text",
-              text: `${expense.date}`,
+              text: `12/02/20`,
             },
           ],
         },
