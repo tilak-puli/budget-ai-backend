@@ -43,7 +43,7 @@ function createMessageConfig(recipient_number, expense) {
     url: `https://graph.facebook.com/v17.0/${sender_phone_id}/messages`,
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer EAAMsZBTN7YfEBO8kgJT2gLfMeZAqRqzS7ZAMttfWGBd8qWES8Um4G1EBJzZCbgNfUTRVFsJZCmSZCWtp4vwzjR7EAJgPKIIoBIbu2hWZABV4ROs1ATBBciVxtak9PaMLStD8r1xYx5QIuei6sNwR4OLDHIn3D65Lq94aEHDfNJsT7nZCMYXftod5jqA9NgiT6yE8WENmtEyUmZBWL5QnvMNMxdu4Wam4ZD",
+      Authorization: "Bearer EAAMsZBTN7YfEBO5fqxWcZBT2imUcG4GGnUCWBejccImAfZAdeUVtDOLlJ8MPQluS2pyb2kprGvvV0kDSuDElZA6vvnkdHRKzVCbJAwAHKoXZA6jAjKoiFYduCdD3jvAkM8WnsIVtFMRVLJRTiiucnZB2sZCsXYJhjB2vsZALW7ZB1CeAcYhZBtB96MbEFk8XW6k5ctgvQpQnpZC8oX4NSXXvfIVdGypQ9y4",
     },
     data: data,
   };
