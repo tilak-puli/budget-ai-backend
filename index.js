@@ -7,7 +7,7 @@ const PORT = 3000;
 
 app.use(express.json())
 app.use(expenseRouter)
-app.use(morgan(':method :url :body :status :res'))
+app.use(morgan(':method :url :status :res'))
 
 app.get("/health", (req, res) => {
   res.send("Working")
