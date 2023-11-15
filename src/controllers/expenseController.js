@@ -1,7 +1,8 @@
 const { getCompletionForExpense } = require("../ai/ai");
 const { getDb } = require("../db/conn.js");
-const Expense = require("../models/expense");
 const { send_expense_message } = require("../plugins/whatsapp.js")
+const { save, generateExpense } = require("../service/expense.js")
+const Expense = require("../models/expense");
 
 const getExpenses = async (req, res) => {
   console.log("request to get expenses");
@@ -15,16 +16,8 @@ const getExpenses = async (req, res) => {
 
 const addAiExpenseWithMessage = async (req, res) => {
   console.log("request to add expense + ", JSON.stringify(req.body));
-  const expenseCompletion = await getCompletionForExpense(
-    req?.body?.userMessage
-  );
-  const expense = new Expense({ ...expenseCompletion, createdAt: Date.now() });
-
-  console.log("adding expense + ", JSON.stringify(expense));
-
-  const db = getDb()
-  const collection = await db.collection("expenses");
-  await collection.insertOne(expense);
+  const expense = await generateExpense(req?.body?.userMessage);
+  await save(expense);
 
   res.json(expense);
 };
@@ -44,12 +37,14 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
     console.log("messages " + messages)
 
     if (Array.isArray(messages)) {
-      messages.forEach(message => {
+      messages.forEach(async message => {
         console.log("Message is " + message?.text?.body);
         console.log("Message is from" + message?.from);
-
+        const expense = await generateExpense(req?.body?.userMessage);
+        await save(expense);
+        
         if (message.from) {
-          send_expense_message(message.from, new Expense("Test expense", 100, "test", new Date()))
+          send_expense_message(message.from, expense)
         }
       })
     }
@@ -64,3 +59,4 @@ module.exports = {
   addAiExpenseFromWhatsapp,
   whastappVerification
 };
+
