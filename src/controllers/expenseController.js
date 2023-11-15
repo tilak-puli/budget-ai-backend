@@ -34,7 +34,7 @@ const whastappVerification = async (req, res) => {
 
 
 const addAiExpenseFromWhatsapp = async (req, res) => {
-  console.log("Got message from whatsapp: " + JSON.stringify(req))
+  console.log("Got message from whatsapp: " + JSON.stringify(req.body))
   res.send(200)
 }
 
