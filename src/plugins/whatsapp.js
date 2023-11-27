@@ -3,7 +3,31 @@ const axios = require("axios");
 // Your test sender phone number
 const sender_phone_id = 167914476401345;
 
-function createMessageConfig(recipient_number, expense) {
+function createMessageConfig(recipient_number, message) {
+  let config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: `https://graph.facebook.com/v17.0/${sender_phone_id}/messages`,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer EAAMsZBTN7YfEBOxfhFyHqAXFCU9ZB2asvD8W7CRNtHrjiIHAAFUbhmDru9I8YZAXNcWVg8n6V1Iyp0aBpUbbQJzHMrgZB12uyRObp3ZCa31ZB9EAT3XR8EqcaXjxGqUQNYDTRYhajHlWfPe695qDNvmzReNRPvvDy0RbfWINDOE1QZAZBg28MgBmZAZAfS8oNMvkiSiZCND61x2yzWIUporjL7k6yz6KNQZD",
+    },
+    data: JSON.stringify({
+      "messaging_product": "whatsapp",
+      "recipient_type": "individual",
+      "to": recipient_number,
+      "type": "text",
+      "text": {
+        "preview_url": false,
+        "body": message
+      }
+    }),
+  };
+
+  return config;
+}
+
+function createExpenseMessageConfig(recipient_number, expense) {
   let data = JSON.stringify({
     messaging_product: "whatsapp",
     to: recipient_number,
@@ -54,7 +78,7 @@ function createMessageConfig(recipient_number, expense) {
 async function send_expense_message(recipient_number, expense) {
   console.log("Sending message to " + recipient_number)
   axios
-    .request(createMessageConfig(recipient_number, expense))
+    .request(createExpenseMessageConfig(recipient_number, expense))
     .then((response) => {
       console.log(JSON.stringify(response.data));
     })
@@ -63,4 +87,17 @@ async function send_expense_message(recipient_number, expense) {
     });
 }
 
-module.exports = { send_expense_message }
+
+async function send_message(recipient_number, message) {
+  console.log("Sending message to " + recipient_number + " " + message)
+  axios
+    .request(createMessageConfig(recipient_number, message))
+    .then((response) => {
+      console.log(JSON.stringify(response.data));
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
+module.exports = { send_expense_message, send_message }
