@@ -2,7 +2,7 @@ const OpenAI = require("openai");
 const API_KEY = process.env.OPENAI_API_KEY;
 const openai = new OpenAI({ apiKey: API_KEY });
 
-const ASSISTANT_ID = "asst_T8A338jyIlGF1BQ5QtX2jMHh";
+const ASSISTANT_ID = "asst_7zfRBD3xiRWsTA2DwbenOKoB";
 const SYSTEM_MESSAGE =
   "As a expense tracker. In json, respond with expense {category, amount, description, date}. today date is: ";
 
@@ -10,7 +10,7 @@ const SYSTEM_MESSAGE =
 async function createAssistant() {
   const myAssistant = await openai.beta.assistants.create({
     instructions:
-      "You are a personal expense tracker. When given a message about expense. return a json object with fields {category, amount, description, date}.",
+      "You are a personal expense tracker. When given a message about expense. return a json object with fields {category, amount, description, date(null if not given)}.",
     name: "Expense Tracker",
     tools: [],
     model: "gpt-4",

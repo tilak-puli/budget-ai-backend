@@ -15,6 +15,7 @@ const generateExpense = async (message) => {
 
     try {
         const expenseObj = JSON.parse(expenseCompletion);
+        // Fix this by validating date instead
         if(!expenseObj.date || expenseObj.date?.match(/Date/)) {
             expenseObj.date = Date.now()
         }
