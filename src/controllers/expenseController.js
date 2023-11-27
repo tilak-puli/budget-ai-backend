@@ -20,7 +20,7 @@ const addAiExpenseWithMessage = async (req, res) => {
 
   await expenseService.save(expense);
 
-  res.json({expense});
+  res.json(expense);
 };
 
 const whastappVerification = async (req, res) => {

@@ -5,10 +5,6 @@ class Expense {
         this.category = capitalizeFirstLetter(category || "Other");
         this.date = new Date(date);
         this.createdAt = new Date(createdAt)
-
-        if(!this.date) {
-            this.date = this.createdAt
-        }
     }
 }
 
