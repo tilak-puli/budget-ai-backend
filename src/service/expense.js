@@ -11,9 +11,8 @@ const save = async (expense) => {
 }
 
 const generateExpense = async (message) => {
-    const expenseCompletion = await getCompletionForExpense(message);
-
     try {
+        const expenseCompletion = await getCompletionForExpense(message);
         const expenseObj = JSON.parse(expenseCompletion);
         const expense = new Expense({ ...expenseObj, createdAt: Date.now() });
         return { expense };

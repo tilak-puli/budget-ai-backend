@@ -27,6 +27,7 @@ function createMessageConfig(recipient_number, message) {
   return config;
 }
 
+// Not Using cause templates are too slow
 function createExpenseMessageConfig(recipient_number, expense) {
   let data = JSON.stringify({
     messaging_product: "whatsapp",
@@ -75,10 +76,22 @@ function createExpenseMessageConfig(recipient_number, expense) {
   return config;
 }
 
+function expenseText(expense) {
+  return `Expense Created
+
+Description: ${expense.description}
+Amount: ${expense.amount}
+Category: ${expense.category}
+Date: 12/20/2000
+
+Please use the app to update the expense
+`
+}
+
 async function send_expense_message(recipient_number, expense) {
   console.log("Sending message to " + recipient_number)
   axios
-    .request(createExpenseMessageConfig(recipient_number, expense))
+    .request(createMessageConfig(recipient_number, expenseText(expense)))
     .then((response) => {
       console.log(JSON.stringify(response.data));
     })
