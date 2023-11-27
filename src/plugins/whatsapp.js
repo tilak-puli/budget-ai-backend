@@ -82,7 +82,7 @@ function expenseText(expense) {
 Description: ${expense.description}
 Amount: ${expense.amount}
 Category: ${expense.category}
-Date: 12/20/2000
+Date: ${new Intl.DateTimeFormat('ban').format(expense.createdAt)}
 
 Please use the app to update the expense
 `
