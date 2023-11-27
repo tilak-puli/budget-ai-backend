@@ -15,7 +15,10 @@ const generateExpense = async (message) => {
 
     try {
         const expenseObj = JSON.parse(expenseCompletion);
-        const expense = new Expense({ ...expenseObj, date: expenseObj.date || Date.now(), createdAt: Date.now() });
+        if(!expenseObj.date || expenseObj.date?.match(/Date/)) {
+            expenseObj.date = Date.now()
+        }
+        const expense = new Expense({ ...expenseObj, date: expenseObj.date, createdAt: Date.now() });
         return { expense };
     } catch {
         return { errorMessage: expenseCompletion}
