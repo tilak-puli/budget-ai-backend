@@ -30,11 +30,13 @@ const pollForResponse = async (run, res, rej, time = 1) => {
   console.log(runStatus);
 
   if (runStatus.status != 'completed') {
-    if(time === 3) {
+    if(time >= 3) {
       res("Failed to get response from chatgpt");
       return console.log("timed out")
     } else {
+      console.log("Retrying for message")
       setTimeout(() => pollForResponse(run, res, rej, time + 1), 500)
+      return;
     }
   }
 

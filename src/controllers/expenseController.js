@@ -12,10 +12,15 @@ const getExpenses = async (req, res) => {
 
 const addAiExpenseWithMessage = async (req, res) => {
   console.log("request to add expense + ", JSON.stringify(req.body));
-  const expense = await expenseService.generateExpense(req?.body?.userMessage);
+  const { expense, errorMessage } = await expenseService.generateExpense(req?.body?.userMessage);
+
+  if(errorMessage) {
+    res.status(500).send({errorMessage})
+  }
+
   await expenseService.save(expense);
 
-  res.json(expense);
+  res.json({expense});
 };
 
 const whastappVerification = async (req, res) => {
