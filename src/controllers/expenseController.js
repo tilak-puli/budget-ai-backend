@@ -1,3 +1,4 @@
+const Expense = require("../models/expense.js");
 const { send_expense_message } = require("../plugins/whatsapp.js")
 const expenseService = require("../service/expense.js")
 
@@ -40,9 +41,16 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
       console.log("Message is " + message?.text?.body);
       console.log("Message is from" + message?.from);
 
-      const expense = await expenseService.generateExpense(messageText);
+      const { expense, errorMessage} = await expenseService.generateExpense(messageText);
+
+      if(errorMessage) {
+        console.log("Error in generating expense:" + errorMessage)
+         return;
+      }
+
       await expenseService.save(expense);
 
+      // const expense = new Expense({description:"test", category: "test", amount: 100, createdAt: new Date(), date: "hj"})
       if (from) {
         console.log(`Sending expense: ${JSON.stringify(expense)} message to ${from}`)
         send_expense_message(from, expense)

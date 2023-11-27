@@ -2,8 +2,64 @@ const OpenAI = require("openai");
 const API_KEY = process.env.OPENAI_API_KEY;
 const openai = new OpenAI({ apiKey: API_KEY });
 
+const ASSISTANT_ID = "asst_T8A338jyIlGF1BQ5QtX2jMHh";
 const SYSTEM_MESSAGE =
   "As a expense tracker. In json, respond with expense {category, amount, description, date}. today date is: ";
+
+
+async function createAssistant() {
+  const myAssistant = await openai.beta.assistants.create({
+    instructions:
+      "You are a personal expense tracker. When given a message about expense. return a json object with fields {category, amount, description, date}.",
+    name: "Expense Tracker",
+    tools: [],
+    model: "gpt-4",
+  });
+
+  console.log(myAssistant);
+}
+
+// createAssistant();
+
+
+
+async function runAI(message) {
+  const run = await openai.beta.threads.createAndRun({
+    assistant_id: ASSISTANT_ID,
+    thread: {
+      messages: [
+        { role: "user", content: message },
+      ],
+    },
+  });
+
+  return new Promise((res, rej) => setTimeout(async () => {
+    const lastestRun = await openai.beta.threads.runs.retrieve(
+      run.thread_id,
+      run.id
+    );
+
+    console.log(lastestRun);
+
+    if (lastestRun.status != 'completed') {
+      rej("Timeout");
+      return console.log("timed out")
+    }
+
+    try {
+      const threadMessages = await openai.beta.threads.messages.list(
+        run.thread_id
+      );
+
+      console.log(JSON.stringify(threadMessages.data))
+      console.log(threadMessages.data[0].content[0].text.value)
+      res(threadMessages.data[0].content[0].text.value)
+    } catch (e) {
+      rej("error in retreiving message");
+      return console.log("error in retreiving message: " + e)
+    }
+  }, 2000))
+}
 
 const getCompletionForExpense = async (userMessage) => {
   const completion = await getCompletion(
@@ -30,5 +86,5 @@ const getCompletion = async (systemMessage, userMessage) => {
 };
 
 module.exports = {
-  getCompletionForExpense,
+  getCompletionForExpense: runAI,
 };

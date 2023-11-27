@@ -12,16 +12,22 @@ const save = async (expense) => {
 
 const generateExpense = async (message) => {
     const expenseCompletion = await getCompletionForExpense(message);
-    const expense = new Expense({ ...expenseCompletion, createdAt: Date.now() });
-    return expense;
+
+    try {
+        const expenseObj = JSON.parse(expenseCompletion);
+        const expense = new Expense({ ...expenseObj, createdAt: Date.now() });
+        return { expense };
+    } catch {
+        return { errorMessage: expenseCompletion}
+    }
 }
 
 const getExpenses = async () => {
-  const db = getDb();
-  const collection = await db.collection("expenses");
-  const expense_rows = await collection.find({}).sort({ "date": -1, "createdAt": 1 }).toArray();
+    const db = getDb();
+    const collection = await db.collection("expenses");
+    const expense_rows = await collection.find({}).sort({ "date": -1, "createdAt": 1 }).toArray();
 
-  return expense_rows.map((obj) => new Expense(obj));
+    return expense_rows.map((obj) => new Expense(obj));
 }
 
 module.exports = {
