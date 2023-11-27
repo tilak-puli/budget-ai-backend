@@ -47,6 +47,7 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
 
       if(errorMessage) {
         console.log("Error in generating expense:" + errorMessage)
+        send_message(from, errorMessage)
          return;
       }
 
