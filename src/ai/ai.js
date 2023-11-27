@@ -34,7 +34,7 @@ const pollForResponse = async (run, res, rej, time = 1) => {
       res("Failed to get response from chatgpt");
       return console.log("timed out")
     } else {
-      setTimeout(pollForResponse(run, res, rej, time + 1), 500)
+      setTimeout(() => pollForResponse(run, res, rej, time + 1), 500)
     }
   }
 
@@ -62,7 +62,7 @@ async function runAI(message) {
     },
   });
 
-  return new Promise((res, rej) => setTimeout(pollForResponse(runResponse, res, rej), 2000))
+  return new Promise((res, rej) => setTimeout(() => pollForResponse(runResponse, res, rej), 2000))
 }
 
 const getCompletionForExpense = async (userMessage) => {
