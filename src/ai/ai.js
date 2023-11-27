@@ -21,10 +21,39 @@ async function createAssistant() {
 
 // createAssistant();
 
+const pollForResponse = async (run, res, rej, time = 1) => {
+  const runStatus = await openai.beta.threads.runs.retrieve(
+    run.thread_id,
+    run.id
+  );
 
+  console.log(runStatus);
+
+  if (runStatus.status != 'completed') {
+    if(time === 3) {
+      res("Failed to get response from chatgpt");
+      return console.log("timed out")
+    } else {
+      setTimeout(pollForResponse(run, res, rej, time + 1), 500)
+    }
+  }
+
+  try {
+    const threadMessages = await openai.beta.threads.messages.list(
+      run.thread_id
+    );
+
+    console.log(JSON.stringify(threadMessages.data))
+    console.log(threadMessages.data[0].content[0].text.value)
+    res(threadMessages.data[0].content[0].text.value)
+  } catch (e) {
+    rej("error in retreiving message");
+    return console.log("error in retreiving message: " + e)
+  }
+}
 
 async function runAI(message) {
-  const run = await openai.beta.threads.createAndRun({
+  const runResponse = await openai.beta.threads.createAndRun({
     assistant_id: ASSISTANT_ID,
     thread: {
       messages: [
@@ -33,32 +62,7 @@ async function runAI(message) {
     },
   });
 
-  return new Promise((res, rej) => setTimeout(async () => {
-    const lastestRun = await openai.beta.threads.runs.retrieve(
-      run.thread_id,
-      run.id
-    );
-
-    console.log(lastestRun);
-
-    if (lastestRun.status != 'completed') {
-      rej("Timeout");
-      return console.log("timed out")
-    }
-
-    try {
-      const threadMessages = await openai.beta.threads.messages.list(
-        run.thread_id
-      );
-
-      console.log(JSON.stringify(threadMessages.data))
-      console.log(threadMessages.data[0].content[0].text.value)
-      res(threadMessages.data[0].content[0].text.value)
-    } catch (e) {
-      rej("error in retreiving message");
-      return console.log("error in retreiving message: " + e)
-    }
-  }, 2000))
+  return new Promise((res, rej) => setTimeout(pollForResponse(runResponse, res, rej), 2000))
 }
 
 const getCompletionForExpense = async (userMessage) => {
