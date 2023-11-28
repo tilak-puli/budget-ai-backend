@@ -7,20 +7,6 @@ const SYSTEM_MESSAGE =
   "As a expense tracker. In json, respond with expense {category, amount, description, date}. today date is: ";
 
 
-async function createAssistant() {
-  const myAssistant = await openai.beta.assistants.create({
-    instructions:
-      "You are a personal expense tracker. When given a message about expense. return a json object with fields {category, amount, description, date(null if not given)}.",
-    name: "Expense Tracker",
-    tools: [],
-    model: "gpt-4",
-  });
-
-  console.log(myAssistant);
-}
-
-// createAssistant();
-
 const pollForResponse = async (run, res, rej, time = 1) => {
   const runStatus = await openai.beta.threads.runs.retrieve(
     run.thread_id,

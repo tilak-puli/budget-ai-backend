@@ -1,11 +1,16 @@
 const Expense = require("../models/expense.js");
 const { send_expense_message, send_message } = require("../plugins/whatsapp.js")
-const expenseService = require("../service/expense.js")
+const expenseService = require("../service/expense.js");
+const { getNowInIndiaTimezone } = require("../utils/date.js");
 
 const getExpenses = async (req, res) => {
   console.log("request to get expenses");
 
-  const expenses = await expenseService.getExpenses();
+  const date = getNowInIndiaTimezone()
+  const fromDate = req.query.fromDate ? new Date(req.query.fromDate) :  new Date(date.getFullYear(), date.getMonth(), 1);
+  const toDate = req.query.toDate ? new Date(req.query.toDate) : new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+  const expenses = await expenseService.getExpenses(fromDate, toDate);
 
   res.json(expenses);
 };
@@ -27,6 +32,32 @@ const whastappVerification = async (req, res) => {
   res.send(req.query["hub.challenge"])
 }
 
+const handleMessage = async message => {
+  const from = message?.from;
+  const messageText = message?.text?.body
+  console.log("Message is " + message?.text?.body);
+  console.log("Message is from" + message?.from);
+
+  send_message(message.from, "Creating expense...")
+
+  const { expense, errorMessage} = await expenseService.generateExpense(messageText);
+
+  if(errorMessage) {
+    console.log("Error in generating expense:" + errorMessage)
+    send_message(from, errorMessage)
+     return;
+  }
+
+  await expenseService.save(expense);
+
+  // const expense = new Expense({description:"test", category: "test", amount: 100, createdAt: new Date(), date: "hj"})
+  if (from) {
+    console.log(`Sending expense: ${JSON.stringify(expense)} message to ${from}`)
+    send_expense_message(from, expense)
+  } else {
+    console.log("No from to send")
+  }
+}
 
 const addAiExpenseFromWhatsapp = async (req, res) => {
   console.log("Whatsapp message " + JSON.stringify(req.body));
@@ -40,32 +71,7 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
 
     console.log("messages " + messages)
 
-    messages?.forEach(async message => {
-      const from = message?.from;
-      const messageText = message?.text?.body
-      console.log("Message is " + message?.text?.body);
-      console.log("Message is from" + message?.from);
-
-      send_message(message.from, "Creating expense...")
-
-      const { expense, errorMessage} = await expenseService.generateExpense(messageText);
-
-      if(errorMessage) {
-        console.log("Error in generating expense:" + errorMessage)
-        send_message(from, errorMessage)
-         return;
-      }
-
-      await expenseService.save(expense);
-
-      // const expense = new Expense({description:"test", category: "test", amount: 100, createdAt: new Date(), date: "hj"})
-      if (from) {
-        console.log(`Sending expense: ${JSON.stringify(expense)} message to ${from}`)
-        send_expense_message(from, expense)
-      } else {
-        console.log("No from to send")
-      }
-    })
+    messages?.forEach(handleMessage)
 
   } else {
     console.log("Not a whatsapp message")
