@@ -15,6 +15,43 @@ const getExpenses = async (req, res) => {
   res.json(expenses);
 };
 
+const createExpense = async (req, res) => {
+  const { category, date, description, amount} = req.body?.expense || {};
+
+  if(!category || !date || !description || amount === undefined) {
+    return res.status(400).send("Invalid Expense")
+  }
+
+  const expense = await expenseService.createExpense(category, description, amount, date);
+
+  res.json(expense);
+}
+
+const updateExpense = async (req, res) => {
+  console.log("update expense with " + JSON.stringify(req.body));
+  const { _id, category, date, description, amount} = req.body?.expense || {};
+
+  if(!category || !date || !description || amount === undefined || !_id) {
+    return res.status(400).send("Invalid Expense")
+  }
+
+  const updatedExpense = await expenseService.updateExpense(_id, category, description, amount, new Date(date));
+
+  if(!updatedExpense) {
+    return res.status(400).send("Expense Not Found")
+  }
+  
+  res.json(updatedExpense);
+}
+
+const deleteExpense = async (req, res) => {
+  const { id } = req.body || {};
+
+  const deleted = await expenseService.deleteExpense(id);
+
+  res.json({deleted})
+}
+
 const addAiExpenseWithMessage = async (req, res) => {
   console.log("request to add expense + ", JSON.stringify(req.body));
   const { expense, errorMessage } = await expenseService.generateExpense(req?.body?.userMessage);
@@ -23,9 +60,9 @@ const addAiExpenseWithMessage = async (req, res) => {
     res.status(500).send({errorMessage})
   }
 
-  await expenseService.save(expense);
+  const id = await expenseService.save(expense);
 
-  res.json(expense);
+  res.json({...expense, id});
 };
 
 const whastappVerification = async (req, res) => {
@@ -81,13 +118,6 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
   res.sendStatus(200)
 }
 
-module.exports = {
-  getExpenses,
-  addAiExpenseWithMessage,
-  addAiExpenseFromWhatsapp,
-  whastappVerification
-};
-
 function getMessages(body) {
   const entry = body?.entry[0];
   const messages = entry?.changes?.[0]?.value?.messages;
@@ -95,3 +125,13 @@ function getMessages(body) {
   return messages;
 }
 
+
+module.exports = {
+  getExpenses,
+  addAiExpenseWithMessage,
+  addAiExpenseFromWhatsapp,
+  whastappVerification,
+  createExpense,
+  updateExpense,
+  deleteExpense
+};

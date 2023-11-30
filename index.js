@@ -3,7 +3,7 @@ const express = require("express");
 const expenseRouter = require("./src/routes/expenseRouter")
 const morgan = require('morgan')
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 app.use(express.json())
 app.use(expenseRouter)
