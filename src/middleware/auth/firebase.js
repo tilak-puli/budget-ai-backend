@@ -17,4 +17,4 @@ const getUserByPhoneNumber = async (phoneNumber) => {
   }
 }
 
-module.exports = { admin };
+module.exports = { admin, getUserByPhoneNumber };
