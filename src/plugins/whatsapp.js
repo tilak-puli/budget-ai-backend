@@ -10,7 +10,7 @@ function createMessageConfig(recipient_number, message) {
     url: `https://graph.facebook.com/v17.0/${sender_phone_id}/messages`,
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer EAAMsZBTN7YfEBOxfhFyHqAXFCU9ZB2asvD8W7CRNtHrjiIHAAFUbhmDru9I8YZAXNcWVg8n6V1Iyp0aBpUbbQJzHMrgZB12uyRObp3ZCa31ZB9EAT3XR8EqcaXjxGqUQNYDTRYhajHlWfPe695qDNvmzReNRPvvDy0RbfWINDOE1QZAZBg28MgBmZAZAfS8oNMvkiSiZCND61x2yzWIUporjL7k6yz6KNQZD",
+      "Authorization": "Bearer EAAMsZBTN7YfEBO2nrQatgetoaG8TJBuxDtL4DrSNivJqZCeJ06iMtoq4vR2fAyhr2z34u4anSZCQZCU1Dh1ETMfh2kthug11VVKH50qFVyvZC5GkH39ZCxc1GGsJuPR5kZAaerZAIydWIAtZBvCg9j3MbUGhfNk1HTjg9PbuuKKacvSLatXfOXZBKZClUbH4BKiPluLJiHo7eyXeX6zqP6XATT3vPAOZAuJ9",
     },
     data: JSON.stringify({
       "messaging_product": "whatsapp",
