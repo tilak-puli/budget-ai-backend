@@ -1,7 +1,6 @@
 const admin = require('firebase-admin');
 
 const serviceAccount = require('./firebaseKey.json');
-const { async } = require('@firebase/util');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -9,10 +8,11 @@ admin.initializeApp({
 
 const getUserByPhoneNumber = async (phoneNumber) => {
   try {
+    const user = await admin.auth().getUserByPhoneNumber("+" + phoneNumber)
     return {
-      firebaseUser: await firebase.auth().getUserByPhoneNumber(phoneNumber)
+      firebaseUser: user
     };
-  } catch {
+  } catch(error) {
     return { errorMessage: "user not found" }
   }
 }

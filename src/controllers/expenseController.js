@@ -103,7 +103,7 @@ const handleMessage = async message => {
   console.log("Message is " + message?.text?.body);
   console.log("Message is from" + message?.from);
 
-  const { firebaseUser, errorMessage: userErrorMessage } = getUserByPhoneNumber(from);
+  const { firebaseUser, errorMessage: userErrorMessage } = await getUserByPhoneNumber(from);
 
   if(userErrorMessage) {
     return send_message(message.from, "Please signup before using our services");
@@ -111,7 +111,7 @@ const handleMessage = async message => {
 
   send_message(message.from, "Creating expense...")
 
-  const { expense, errorMessage} = await expenseService.generateExpense(firebaseUser.user_id, messageText);
+  const { expense, errorMessage} = await expenseService.generateExpense(firebaseUser.uid, messageText);
 
   if(errorMessage) {
     console.log("Error in generating expense:" + errorMessage)
