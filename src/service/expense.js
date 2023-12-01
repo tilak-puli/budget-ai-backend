@@ -1,4 +1,4 @@
-const { getCompletionForExpense } = require("../ai/ai");
+const { getCompletionForExpense } = require("../utils/ai.js");
 const { getDb } = require("../db/conn.js");
 const Expense = require("../models/expense");
 const { getNowInIndiaTimezone } = require("../utils/date.js");
@@ -6,13 +6,12 @@ const { ObjectId } = require("mongodb");
 
 const save = async (expense) => {
     console.log("adding expense + ", JSON.stringify(expense));
+    const collection = await getDBCollection();
 
-    const db = getDb();
-    const collection = await db.collection("expenses");
-    await collection.insertOne(expense).insertedId;
+    return await collection.insertOne(expense).insertedId;
 }
 
-const generateExpense = async (message) => {
+const generateExpense = async (userId, message) => {
     const expenseCompletion = await getCompletionForExpense(message);
     const now = getNowInIndiaTimezone()
 
@@ -24,33 +23,29 @@ const generateExpense = async (message) => {
         expenseObj.date = now
         // }
 
-        const expense = new Expense({ ...expenseObj, date: expenseObj.date, createdAt: now, prompt: message });
+        const expense = new Expense({ ...expenseObj, date: expenseObj.date, createdAt: now, prompt: message, userId });
         return { expense };
     } catch {
         return { errorMessage: expenseCompletion }
     }
 }
 
-const getExpenses = async (fromDate, toDate) => {
-    const db = getDb();
-    const collection = await db.collection("expenses");
-    const expense_rows = await collection.find({ "date": { $gte: fromDate, $lte: toDate } }).sort({ "date": -1, "createdAt": 1 }).toArray();
+const getExpenses = async (userId, fromDate, toDate) => {
+    const collection = await getDBCollection();
+    const expense_rows = await collection.find({ "date": { $gte: fromDate, $lte: toDate }, "userId" : { $eq: userId } }).sort({ "date": -1, "createdAt": 1 }).toArray();
 
     return expense_rows.map((obj) => new Expense(obj));
 }
 
-const createExpense = async (category, description, amount, date) => {
-    const db = getDb();
-    const collection = await db.collection("expenses");
-    const expense = await collection.insertOne({ category, description, amount, date, createdAt: new Date() });
+const createExpense = async (userId, category, description, amount, date) => {
+    const _id = save({ userId, category, description, amount, date, createdAt: new Date() });
 
-    return new Expense(expense);
+    return new Expense({_id, userId, category, description, amount, date});
 }
 
-const updateExpense = async (id, category, description, amount, date) => {
-    const db = getDb();
-    const collection = await db.collection("expenses");
-    const result = await collection.updateOne({ _id: new ObjectId(id) }, { $set: { description, amount, date, category, updatedAt: new Date() } });
+const updateExpense = async (userId, id, category, description, amount, date) => {
+    const collection = await getDBCollection();
+    const result = await collection.updateOne({ userId, _id: new ObjectId(id) }, { $set: { description, amount, date, category, updatedAt: new Date() } });
 
     if (result.modifiedCount >= 1) {
         const updatedExpense = collection.findOne({ _id: new ObjectId(id) });
@@ -60,10 +55,9 @@ const updateExpense = async (id, category, description, amount, date) => {
     return null;
 }
 
-const deleteExpense = async (id) => {
-    const db = getDb();
-    const collection = await db.collection("expenses");
-    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+const deleteExpense = async (userId, id) => {
+    const collection = await getDBCollection();
+    const result = await collection.deleteOne({ userId, _id: new ObjectId(id) });
 
     if (result.deletedCount === 1) {
         console.log("Successfully deleted one expense.");
@@ -81,4 +75,10 @@ module.exports = {
     createExpense,
     updateExpense,
     deleteExpense
+}
+
+async function getDBCollection() {
+    const db = getDb();
+    const collection = await db.collection("expenses");
+    return collection;
 }

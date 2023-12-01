@@ -1,5 +1,5 @@
 class Expense {
-    constructor({_id, description, amount, category, date, createdAt, prompt = null}) {
+    constructor({_id, userId, description, amount, category, date, createdAt, prompt = null}) {
         this.description = description || "Random";
         this.amount = amount || 0;
         this.category = capitalizeFirstLetter(category || "Other");
@@ -7,6 +7,7 @@ class Expense {
         this.createdAt = new Date(createdAt);
         this.prompt = prompt;
         this._id = _id;
+        this.userId = userId;
     }
 }
 

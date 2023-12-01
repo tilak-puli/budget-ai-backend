@@ -2,40 +2,57 @@ const Expense = require("../models/expense.js");
 const { send_expense_message, send_message } = require("../plugins/whatsapp.js")
 const expenseService = require("../service/expense.js");
 const { getNowInIndiaTimezone } = require("../utils/date.js");
+const { getUserByPhoneNumber } = require("../middleware/auth/firebase.js");
 
 const getExpenses = async (req, res) => {
   console.log("request to get expenses");
+  const userId = req.firebaseToken?.user_id
+
+  if(!userId) {
+    res.status(400).send({errorMessage: "Invalid User"});
+  }
 
   const date = getNowInIndiaTimezone()
   const fromDate = req.query.fromDate ? new Date(req.query.fromDate) :  new Date(date.getFullYear(), date.getMonth(), 1);
   const toDate = req.query.toDate ? new Date(req.query.toDate) : new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-  const expenses = await expenseService.getExpenses(fromDate, toDate);
+  const expenses = await expenseService.getExpenses(userId, fromDate, toDate);
 
   res.json(expenses);
 };
 
 const createExpense = async (req, res) => {
+  const userId = req.firebaseToken?.user_id
+
+  if(!userId) {
+    res.status(400).send({errorMessage: "Invalid User"});
+  }
+
   const { category, date, description, amount} = req.body?.expense || {};
 
   if(!category || !date || !description || amount === undefined) {
     return res.status(400).send("Invalid Expense")
   }
 
-  const expense = await expenseService.createExpense(category, description, amount, date);
+  const expense = await expenseService.createExpense(userId, category, description, amount, date);
 
   res.json(expense);
 }
 
 const updateExpense = async (req, res) => {
   console.log("update expense with " + JSON.stringify(req.body));
+  const userId = req.firebaseToken?.user_id
+
+  if(!userId) {
+    res.status(400).send({errorMessage: "Invalid User"});
+  }
   const { _id, category, date, description, amount} = req.body?.expense || {};
 
   if(!category || !date || !description || amount === undefined || !_id) {
     return res.status(400).send("Invalid Expense")
   }
 
-  const updatedExpense = await expenseService.updateExpense(_id, category, description, amount, new Date(date));
+  const updatedExpense = await expenseService.updateExpense(userId, _id, category, description, amount, new Date(date));
 
   if(!updatedExpense) {
     return res.status(400).send("Expense Not Found")
@@ -46,23 +63,34 @@ const updateExpense = async (req, res) => {
 
 const deleteExpense = async (req, res) => {
   const { id } = req.body || {};
+  const userId = req.firebaseToken?.user_id
 
-  const deleted = await expenseService.deleteExpense(id);
+  if(!userId) {
+    res.status(400).send({errorMessage: "Invalid User"});
+  }
+
+  const deleted = await expenseService.deleteExpense(userId, id);
 
   res.json({deleted})
 }
 
 const addAiExpenseWithMessage = async (req, res) => {
   console.log("request to add expense + ", JSON.stringify(req.body));
-  const { expense, errorMessage } = await expenseService.generateExpense(req?.body?.userMessage);
+  const userId = req.firebaseToken?.user_id
+
+  if(!userId) {
+    res.status(400).send({errorMessage: "Invalid User"});
+  }
+
+  const { expense, errorMessage } = await expenseService.generateExpense(userId, req?.body?.userMessage);
 
   if(errorMessage) {
     res.status(500).send({errorMessage})
   }
 
-  const id = await expenseService.save(expense);
+  const _id = await expenseService.save(expense);
 
-  res.json({...expense, id});
+  res.json(new Expense({...expense, _id}));
 };
 
 const whastappVerification = async (req, res) => {
@@ -75,9 +103,15 @@ const handleMessage = async message => {
   console.log("Message is " + message?.text?.body);
   console.log("Message is from" + message?.from);
 
+  const { firebaseUser, errorMessage: userErrorMessage } = getUserByPhoneNumber(from);
+
+  if(userErrorMessage) {
+    return send_message(message.from, "Please signup before using our services");
+  }
+
   send_message(message.from, "Creating expense...")
 
-  const { expense, errorMessage} = await expenseService.generateExpense(messageText);
+  const { expense, errorMessage} = await expenseService.generateExpense(firebaseUser.user_id, messageText);
 
   if(errorMessage) {
     console.log("Error in generating expense:" + errorMessage)
@@ -108,7 +142,7 @@ const addAiExpenseFromWhatsapp = async (req, res) => {
 
     console.log("messages " + messages)
 
-    messages?.forEach(handleMessage)
+    messages?.forEach(handleMessage);
 
   } else {
     console.log("Not a whatsapp message")
