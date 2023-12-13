@@ -1,5 +1,7 @@
 require('dotenv').config()
-const express = require("express");
+const morganBody = require('morgan-body');
+const express = require('express');
+const bodyParser = require('body-parser');
 const expenseRouter = require("./src/routes/expenseRouter")
 const appInfoRouter = require("./src/routes/appInfoRouter")
 const morgan = require('morgan')
@@ -9,19 +11,8 @@ const PORT = 3000;
 
 app.use(cors())
 app.use(express.json())
-app.use(morgan(function (tokens, req, res) {
-  try {
-    return [
-      tokens.method(req, res),
-      tokens.url(req, res),
-      tokens.status(req, res),
-      tokens.res(req, res, 'content-length'), '-',
-      tokens['response-time'](req, res), 'ms'
-    ].join(' ')
-  } catch {
-    return 'Failed to create log'
-  }
-}))
+app.use(bodyParser.json());
+morganBody(app);
 
 app.use(expenseRouter)
 app.use(appInfoRouter)
