@@ -8,7 +8,9 @@ const save = async (expense) => {
     console.log("adding expense + ", JSON.stringify(expense));
     const collection = await getDBCollection();
 
-    return await collection.insertOne(expense).insertedId;
+    const res = await collection.insertOne(expense);
+
+    return res.insertedId;
 }
 
 const generateExpense = async (userId, message) => {
