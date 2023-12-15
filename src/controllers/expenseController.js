@@ -85,7 +85,7 @@ const addAiExpenseWithMessage = async (req, res) => {
   const { expense, errorMessage } = await expenseService.generateExpense(userId, req?.body?.userMessage);
 
   if(errorMessage) {
-    res.status(500).send({errorMessage})
+    return res.status(500).send({errorMessage});
   }
 
   const _id = await expenseService.save(expense);
