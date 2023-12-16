@@ -40,14 +40,14 @@ const getExpenses = async (userId, fromDate, toDate) => {
 }
 
 const createExpense = async (userId, category, description, amount, date) => {
-    const _id = save({ userId, category, description, amount, date, createdAt: new Date() });
+    const _id = save({ userId, category, description, amount, date, createdAt: getNowInIndiaTimezone() });
 
     return new Expense({_id, userId, category, description, amount, date});
 }
 
 const updateExpense = async (userId, id, category, description, amount, date) => {
     const collection = await getDBCollection();
-    const result = await collection.updateOne({ userId, _id: new ObjectId(id) }, { $set: { description, amount, date, category, updatedAt: new Date() } });
+    const result = await collection.updateOne({ userId, _id: new ObjectId(id) }, { $set: { description, amount, date, category, updatedAt: getNowInIndiaTimezone() } });
 
     if (result.modifiedCount >= 1) {
         const updatedExpense = collection.findOne({ _id: new ObjectId(id) });
