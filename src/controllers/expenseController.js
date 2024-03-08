@@ -82,10 +82,10 @@ const addAiExpenseWithMessage = async (req, res) => {
     res.status(400).send({errorMessage: "Invalid User"});
   }
 
-  const { expense, errorMessage } = await expenseService.generateExpense(userId, req?.body?.userMessage);
+  const { expense, errorMessage } = await expenseService.generateExpense(userId, req?.body?.userMessage, req?.body?.date);
 
   if(errorMessage) {
-    return res.status(500).send({errorMessage});
+    return res.status(401).send({errorMessage});
   }
 
   const _id = await expenseService.save(expense);

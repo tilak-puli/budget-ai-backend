@@ -13,7 +13,7 @@ const save = async (expense) => {
     return res.insertedId;
 }
 
-const generateExpense = async (userId, message) => {
+const generateExpense = async (userId, message, date) => {
     const expenseCompletion = await getCompletionForExpense(message);
     const now = getNowInIndiaTimezone()
 
@@ -22,7 +22,11 @@ const generateExpense = async (userId, message) => {
         // Fix this by validating date instead
         // if (!expenseObj.date || expenseObj.date === "null") {
         // Todo: find a way to get proper date from chatgpt
-        expenseObj.date = now
+        if(date) {
+          expenseObj.date = new Date(date);
+        } else {
+          expenseObj.date = now
+        }
         // }
 
         const expense = new Expense({ ...expenseObj, date: expenseObj.date, createdAt: now, prompt: message, userId });
