@@ -1,5 +1,5 @@
 const OpenAI = require("openai");
-const API_KEY = process.env.OPENAI_API_KEY;
+const API_KEY = "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";
 const openai = new OpenAI({ apiKey: API_KEY });
 
 const ASSISTANT_ID = "asst_7zfRBD3xiRWsTA2DwbenOKoB";

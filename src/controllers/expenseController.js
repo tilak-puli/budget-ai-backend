@@ -119,7 +119,7 @@ const handleMessage = async message => {
      return;
   }
 
-  await expenseService.save(expense);
+  await expenseService.createExpense(expense);
 
   // const expense = new Expense({description:"test", category: "test", amount: 100, createdAt: new Date(), date: "hj"})
   if (from) {

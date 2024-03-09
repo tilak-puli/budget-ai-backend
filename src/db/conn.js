@@ -1,5 +1,5 @@
 const { MongoClient } = require("mongodb");
-const connectionString = process.env.ATLAS_URI || "";
+const connectionString = "mongodb+srv://developer15:r0qkDY3yxwG1aDim@mumbai.jciz3rd.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(connectionString);
 
 let db;
@@ -16,7 +16,7 @@ const createConnection = async () => {
   console.log("Connected to database")
 };
 
-createConnection();
+// createConnection();
 
 const getDb = () => {
   return db;

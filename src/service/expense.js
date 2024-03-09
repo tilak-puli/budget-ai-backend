@@ -1,16 +1,10 @@
 const { getCompletionForExpense } = require("../utils/ai.js");
-const { getDb } = require("../db/conn.js");
 const Expense = require("../models/expense");
 const { getNowInIndiaTimezone } = require("../utils/date.js");
-const { ObjectId } = require("mongodb");
+const dbService = require("../db/firestore.js");
 
 const save = async (expense) => {
-    console.log("adding expense + ", JSON.stringify(expense));
-    const collection = await getDBCollection();
-
-    const res = await collection.insertOne(expense);
-
-    return res.insertedId;
+    return await dbService.save(expense);
 }
 
 const generateExpense = async (userId, message, date) => {
@@ -37,24 +31,23 @@ const generateExpense = async (userId, message, date) => {
 }
 
 const getExpenses = async (userId, fromDate, toDate) => {
-    const collection = await getDBCollection();
-    const expense_rows = await collection.find({ "date": { $gte: fromDate, $lte: toDate }, "userId" : { $eq: userId } }).sort({ "date": -1, "createdAt": 1 }).toArray();
+    const rows = await dbService.getExpenses(userId, fromDate, toDate);
 
-    return expense_rows.map((obj) => new Expense(obj));
+    console.log(rows);
+
+    return rows.map((obj) => new Expense(obj));
 }
 
 const createExpense = async (userId, category, description, amount, date) => {
-    const _id = save({ userId, category, description, amount, date, createdAt: getNowInIndiaTimezone() });
+    const _id = dbService.createExpense(userId, category, description, amount, date, getNowInIndiaTimezone());
 
     return new Expense({_id, userId, category, description, amount, date});
 }
 
 const updateExpense = async (userId, id, category, description, amount, date) => {
-    const collection = await getDBCollection();
-    const result = await collection.updateOne({ userId, _id: new ObjectId(id) }, { $set: { description, amount, date, category, updatedAt: getNowInIndiaTimezone() } });
+    const updatedExpense = await dbService.updateExpense(userId, id, category, description, amount, date, getNowInIndiaTimezone());
 
-    if (result.modifiedCount >= 1) {
-        const updatedExpense = collection.findOne({ _id: new ObjectId(id) });
+    if (updatedExpense) {
         return new Expense(updatedExpense);
     }
 
@@ -62,15 +55,14 @@ const updateExpense = async (userId, id, category, description, amount, date) =>
 }
 
 const deleteExpense = async (userId, id) => {
-    const collection = await getDBCollection();
-    const result = await collection.deleteOne({ userId, _id: new ObjectId(id) });
+    const deletedCount = dbService.deleteExpense(userId, id);
 
-    if (result.deletedCount === 1) {
+    if (deletedCount === 1) {
         console.log("Successfully deleted one expense.");
         return true;
     }
 
-    console.log(`No documents matched the query. Deleted ${result.deleteExpense} expense.`);
+    console.log(`No documents matched the delete query.`);
     return false;
 }
 
@@ -81,10 +73,4 @@ module.exports = {
     createExpense,
     updateExpense,
     deleteExpense
-}
-
-async function getDBCollection() {
-    const db = getDb();
-    const collection = await db.collection("expenses");
-    return collection;
 }
