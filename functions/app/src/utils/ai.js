@@ -20,7 +20,7 @@ const getCompletionForExpense = async (prompt) => {
 
   expense.date = new Date(expense.date);
 
-  if (isNaN(date.getTime())) {
+  if (isNaN(expense.date.getTime())) {
     expense.date = getNowInIndiaTimezone();
   }
 
@@ -74,6 +74,6 @@ function getSchema() {
           getNowInIndiaTimezone(),
       },
     },
-    required: ["amount", "_id", "date", "category", "description"],
+    required: ["amount", "date", "category", "description"],
   };
 }
