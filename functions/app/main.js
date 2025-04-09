@@ -4,6 +4,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const expenseRouter = require("./src/routes/expenseRouter");
 const appInfoRouter = require("./src/routes/appInfoRouter");
+const subscriptionRouter = require("./src/routes/subscriptionRouter");
 var cors = require("cors");
 const app = express();
 
@@ -18,5 +19,6 @@ app.get("/health", (req, res) => {
 
 app.use(appInfoRouter);
 app.use(expenseRouter);
+app.use(subscriptionRouter);
 
 exports.app = app;
