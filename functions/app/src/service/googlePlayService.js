@@ -2,10 +2,45 @@ const { google } = require("googleapis");
 const path = require("path");
 const fs = require("fs");
 
-// Path to service account key file
-const SERVICE_ACCOUNT_KEY_PATH =
-  process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH ||
-  path.join(__dirname, "../../config/google-play-service-account.json");
+/**
+ * Get Google Auth client for Play Store API
+ * @returns {Promise<Object>} Google Auth client
+ */
+async function getGoogleAuthClient() {
+  try {
+    // First check if service account JSON is provided as an environment variable
+    if (process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) {
+      try {
+        const serviceAccountJson = JSON.parse(
+          process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+        );
+        return new google.auth.GoogleAuth({
+          credentials: serviceAccountJson,
+          scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+        });
+      } catch (error) {
+        console.error(
+          "Error parsing service account JSON from environment variable:",
+          error
+        );
+        // Fall back to file-based approach
+      }
+    }
+
+    // Fall back to file-based service account
+    const SERVICE_ACCOUNT_KEY_PATH =
+      process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY_PATH ||
+      path.join(__dirname, "../../config/google-play-service-account.json");
+
+    return new google.auth.GoogleAuth({
+      keyFile: SERVICE_ACCOUNT_KEY_PATH,
+      scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+    });
+  } catch (error) {
+    console.error("Error initializing Google Auth client:", error);
+    throw error;
+  }
+}
 
 /**
  * Verify an Android subscription with Google Play
@@ -21,11 +56,7 @@ async function verifyAndroidSubscription(
 ) {
   try {
     // Initialize the Google Auth client
-    const auth = new google.auth.GoogleAuth({
-      keyFile: SERVICE_ACCOUNT_KEY_PATH,
-      scopes: ["https://www.googleapis.com/auth/androidpublisher"],
-    });
-
+    const auth = await getGoogleAuthClient();
     const authClient = await auth.getClient();
     const publisher = google.androidpublisher("v3");
 
