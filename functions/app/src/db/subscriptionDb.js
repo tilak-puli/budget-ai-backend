@@ -1,49 +1,110 @@
-const { getDb } = require("./conn.js");
-const Subscription = require("../models/subscription");
-const { ObjectId } = require("mongodb");
+const { Firestore, Timestamp } = require("@google-cloud/firestore");
+
+const firestore = new Firestore();
+
+firestore.settings({ ignoreUndefinedProperties: true });
 
 const saveSubscription = async (subscription) => {
   console.log("Adding subscription: ", JSON.stringify(subscription));
-  const collection = await getDBCollection();
-  const res = await collection.insertOne(subscription);
-  return res.insertedId;
+  const subscriptionsRef = firestore.collection("subscriptions");
+  const subscriptionDocRef = await subscriptionsRef.add({
+    ...subscription,
+    createdAt: new Date(),
+  });
+  return subscriptionDocRef.id;
 };
 
 const getSubscriptionByUserId = async (userId) => {
-  const collection = await getDBCollection();
-  return await collection.findOne({ userId: userId });
+  const subscriptionsRef = firestore.collection("subscriptions");
+  const query = subscriptionsRef.where("userId", "==", userId).limit(1);
+  const snapshot = await query.get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  return parseSubscription(snapshot.docs[0]);
 };
 
 const updateSubscription = async (userId, subscriptionData) => {
-  const collection = await getDBCollection();
-  const result = await collection.updateOne(
-    { userId },
-    { $set: { ...subscriptionData, lastVerifiedDate: new Date() } },
-    { upsert: true }
-  );
+  const subscriptionsRef = firestore.collection("subscriptions");
 
-  if (result.modifiedCount >= 1 || result.upsertedCount >= 1) {
-    const updatedSubscription = await collection.findOne({ userId });
-    return updatedSubscription;
+  // Find the subscription first
+  const query = subscriptionsRef.where("userId", "==", userId).limit(1);
+  const snapshot = await query.get();
+
+  if (snapshot.empty) {
+    // Create new subscription if it doesn't exist
+    const newSubscription = {
+      userId,
+      ...subscriptionData,
+      lastVerifiedDate: new Date(),
+    };
+    const docRef = await subscriptionsRef.add(newSubscription);
+
+    // Get the newly created subscription
+    const newDoc = await docRef.get();
+    return parseSubscription(newDoc);
   }
 
-  return null;
+  // Update existing subscription
+  const docId = snapshot.docs[0].id;
+  const docRef = subscriptionsRef.doc(docId);
+  await docRef.update({
+    ...subscriptionData,
+    lastVerifiedDate: new Date(),
+  });
+
+  // Get the updated subscription
+  const updatedDoc = await docRef.get();
+  return parseSubscription(updatedDoc);
 };
 
 const deleteSubscription = async (userId) => {
-  const collection = await getDBCollection();
-  const result = await collection.deleteOne({ userId });
-  return result.deletedCount;
+  const subscriptionsRef = firestore.collection("subscriptions");
+  const query = subscriptionsRef.where("userId", "==", userId);
+  const snapshot = await query.get();
+
+  if (snapshot.empty) {
+    return 0;
+  }
+
+  // Delete the document(s)
+  let deletedCount = 0;
+  for (const doc of snapshot.docs) {
+    await doc.ref.delete();
+    deletedCount++;
+  }
+
+  return deletedCount;
 };
 
 const getAllActiveSubscriptions = async () => {
-  const collection = await getDBCollection();
-  return await collection
-    .find({
-      status: "active",
-      expiryDate: { $gt: new Date() },
-    })
-    .toArray();
+  const subscriptionsRef = firestore.collection("subscriptions");
+  const now = new Date();
+
+  const query = subscriptionsRef
+    .where("status", "==", "active")
+    .where("expiryDate", ">", now);
+
+  const snapshot = await query.get();
+  return snapshot.docs.map(parseSubscription);
+};
+
+const parseSubscription = (doc) => {
+  const data = doc.data();
+
+  // Convert all Timestamp objects to Date objects
+  for (const field in data) {
+    if (data[field] instanceof Timestamp) {
+      data[field] = data[field].toDate();
+    }
+  }
+
+  return {
+    _id: doc.id,
+    ...data,
+  };
 };
 
 module.exports = {
@@ -53,9 +114,3 @@ module.exports = {
   deleteSubscription,
   getAllActiveSubscriptions,
 };
-
-async function getDBCollection() {
-  const db = getDb();
-  const collection = await db.collection("subscriptions");
-  return collection;
-}

@@ -1,6 +1,6 @@
 const Subscription = require("../models/subscription");
 const subscriptionDb = require("../db/subscriptionDb");
-const messageQuotaService = require("../service/messageQuotaService");
+const userService = require("../service/userService");
 const { getDb } = require("../db/conn");
 const {
   verifyAndroidSubscription,
@@ -48,6 +48,9 @@ const verifyPurchase = async (req, res) => {
           subscriptionData
         );
 
+        // Get quota information after subscription activation
+        const quotaInfo = await userService.checkMessageQuota(userId, true);
+
         return res.json({
           success: true,
           message: "Subscription verified and activated",
@@ -55,6 +58,14 @@ const verifyPurchase = async (req, res) => {
             status: updatedSubscription.status,
             expiryDate: updatedSubscription.expiryDate,
             autoRenewing: updatedSubscription.autoRenewing,
+          },
+          quota: {
+            hasQuotaLeft: quotaInfo.hasQuotaLeft,
+            remainingQuota: quotaInfo.remainingQuota,
+            isPremium: quotaInfo.isSubscribed,
+            dailyLimit: quotaInfo.dailyLimit,
+            standardLimit: userService.FREE_MESSAGES_PER_DAY,
+            premiumLimit: userService.PREMIUM_MESSAGES_PER_DAY,
           },
         });
       } else {
@@ -95,11 +106,28 @@ const getSubscriptionStatus = async (req, res) => {
 
     const subscription = await subscriptionDb.getSubscriptionByUserId(userId);
 
+    // Check subscription status
+    const isSubscribed =
+      subscription &&
+      subscription.status === "active" &&
+      subscription.expiryDate > new Date();
+
+    // Get quota information
+    const quotaInfo = await userService.checkMessageQuota(userId, isSubscribed);
+
     if (!subscription) {
       return res.json({
         success: true,
         hasSubscription: false,
         message: "No active subscription found",
+        quota: {
+          hasQuotaLeft: quotaInfo.hasQuotaLeft,
+          remainingQuota: quotaInfo.remainingQuota,
+          isPremium: quotaInfo.isSubscribed,
+          dailyLimit: quotaInfo.dailyLimit,
+          standardLimit: userService.FREE_MESSAGES_PER_DAY,
+          premiumLimit: userService.PREMIUM_MESSAGES_PER_DAY,
+        },
       });
     }
 
@@ -115,6 +143,14 @@ const getSubscriptionStatus = async (req, res) => {
         expiryDate: subscription.expiryDate,
         autoRenewing: subscription.autoRenewing,
         platform: subscription.platform,
+      },
+      quota: {
+        hasQuotaLeft: quotaInfo.hasQuotaLeft,
+        remainingQuota: quotaInfo.remainingQuota,
+        isPremium: quotaInfo.isSubscribed,
+        dailyLimit: quotaInfo.dailyLimit,
+        standardLimit: userService.FREE_MESSAGES_PER_DAY,
+        premiumLimit: userService.PREMIUM_MESSAGES_PER_DAY,
       },
     });
   } catch (error) {
@@ -255,7 +291,14 @@ const getUserQuotaStatus = async (req, res) => {
   try {
     const userId = req.firebaseToken.user_id;
 
-    const quotaInfo = await messageQuotaService.checkMessageQuota(userId);
+    // Check subscription status
+    const subscription = await subscriptionDb.getSubscriptionByUserId(userId);
+    const isSubscribed =
+      subscription &&
+      subscription.status === "active" &&
+      subscription.expiryDate > new Date();
+
+    const quotaInfo = await userService.checkMessageQuota(userId, isSubscribed);
 
     return res.json({
       success: true,
@@ -264,8 +307,8 @@ const getUserQuotaStatus = async (req, res) => {
         remainingQuota: quotaInfo.remainingQuota,
         isPremium: quotaInfo.isSubscribed,
         dailyLimit: quotaInfo.dailyLimit,
-        standardLimit: messageQuotaService.FREE_MESSAGES_PER_DAY,
-        premiumLimit: messageQuotaService.PREMIUM_MESSAGES_PER_DAY,
+        standardLimit: userService.FREE_MESSAGES_PER_DAY,
+        premiumLimit: userService.PREMIUM_MESSAGES_PER_DAY,
       },
     });
   } catch (error) {
@@ -307,7 +350,7 @@ const manageUserQuotas = async (req, res) => {
       });
     } else if (action === "reset_all") {
       // Reset all quotas
-      await messageQuotaService.resetAllQuotas();
+      await userService.resetAllQuotas();
 
       return res.json({
         success: true,

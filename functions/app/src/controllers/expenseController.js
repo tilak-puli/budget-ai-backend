@@ -4,9 +4,10 @@ const {
   send_message,
 } = require("../plugins/whatsapp.js");
 const expenseService = require("../service/expense.js");
-const messageQuotaService = require("../service/messageQuotaService.js");
+const userService = require("../service/userService.js");
 const { getNowInIndiaTimezone } = require("../utils/date.js");
 const { getUserByPhoneNumber } = require("../middleware/auth/firebase.js");
+const subscriptionDb = require("../db/subscriptionDb");
 
 const getExpenses = async (req, res) => {
   console.log("request to get expenses");
@@ -26,7 +27,27 @@ const getExpenses = async (req, res) => {
 
   const expenses = await expenseService.getExpenses(userId, fromDate, toDate);
 
-  res.json(expenses);
+  // Check subscription status
+  const subscription = await subscriptionDb.getSubscriptionByUserId(userId);
+  const isSubscribed =
+    subscription &&
+    subscription.status === "active" &&
+    subscription.expiryDate > new Date();
+
+  // Get quota information
+  const quotaInfo = await userService.checkMessageQuota(userId, isSubscribed);
+
+  res.json({
+    expenses: expenses,
+    quota: {
+      hasQuotaLeft: quotaInfo.hasQuotaLeft,
+      remainingQuota: quotaInfo.remainingQuota,
+      isPremium: quotaInfo.isSubscribed,
+      dailyLimit: quotaInfo.dailyLimit,
+      standardLimit: userService.FREE_MESSAGES_PER_DAY,
+      premiumLimit: userService.PREMIUM_MESSAGES_PER_DAY,
+    },
+  });
 };
 
 const createExpense = async (req, res) => {
@@ -103,8 +124,15 @@ const addAiExpenseWithMessage = async (req, res) => {
     return res.status(400).send({ errorMessage: "Invalid User" });
   }
 
+  // Check subscription status
+  const subscription = await subscriptionDb.getSubscriptionByUserId(userId);
+  const isSubscribed =
+    subscription &&
+    subscription.status === "active" &&
+    subscription.expiryDate > new Date();
+
   // Check if user has quota left
-  const quotaInfo = await messageQuotaService.checkMessageQuota(userId);
+  const quotaInfo = await userService.checkMessageQuota(userId, isSubscribed);
 
   if (!quotaInfo.hasQuotaLeft) {
     return res.status(403).send({
@@ -130,16 +158,22 @@ const addAiExpenseWithMessage = async (req, res) => {
     return res.status(401).send({ errorMessage });
   }
 
-  // Increment message count for all users
-  await messageQuotaService.incrementMessageCount(userId);
+  // Increment message count
+  await userService.incrementMessageCount(userId);
 
   const _id = await expenseService.save(expense);
 
+  // Get fresh quota info
+  const updatedQuotaInfo = await userService.checkMessageQuota(
+    userId,
+    isSubscribed
+  );
+
   res.json({
     expense: new Expense({ ...expense, _id }),
-    remainingQuota: quotaInfo.remainingQuota - 1,
-    dailyLimit: quotaInfo.dailyLimit,
-    isPremium: quotaInfo.isSubscribed,
+    remainingQuota: updatedQuotaInfo.remainingQuota,
+    dailyLimit: updatedQuotaInfo.dailyLimit,
+    isPremium: updatedQuotaInfo.isSubscribed,
   });
 };
 
@@ -165,8 +199,15 @@ const handleMessage = async (message) => {
 
   const userId = firebaseUser.uid;
 
+  // Check subscription status
+  const subscription = await subscriptionDb.getSubscriptionByUserId(userId);
+  const isSubscribed =
+    subscription &&
+    subscription.status === "active" &&
+    subscription.expiryDate > new Date();
+
   // Check if user has quota left
-  const quotaInfo = await messageQuotaService.checkMessageQuota(userId);
+  const quotaInfo = await userService.checkMessageQuota(userId, isSubscribed);
 
   if (!quotaInfo.hasQuotaLeft) {
     return send_message(
@@ -192,8 +233,8 @@ const handleMessage = async (message) => {
     return;
   }
 
-  // Increment message count for all users
-  await messageQuotaService.incrementMessageCount(userId);
+  // Increment message count
+  await userService.incrementMessageCount(userId);
 
   await expenseService.createExpense(expense);
 
@@ -203,9 +244,13 @@ const handleMessage = async (message) => {
     );
     send_expense_message(from, expense);
 
-    // Send remaining quota information to all users
-    const remainingQuota = quotaInfo.remainingQuota - 1;
-    const messageSuffix = quotaInfo.isSubscribed
+    // Get fresh quota info
+    const updatedQuotaInfo = await userService.checkMessageQuota(
+      userId,
+      isSubscribed
+    );
+    const remainingQuota = updatedQuotaInfo.remainingQuota;
+    const messageSuffix = isSubscribed
       ? " with your premium account."
       : " today. Upgrade to premium for 100 AI messages per day.";
 
