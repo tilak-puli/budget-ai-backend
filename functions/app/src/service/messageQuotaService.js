@@ -60,10 +60,10 @@ async function checkMessageQuota(userId) {
     };
   } catch (error) {
     console.error("Error checking message quota:", error);
-    // Default to allowing the message in case of errors
+    // Default to denying the message in case of errors
     return {
-      hasQuotaLeft: true,
-      remainingQuota: 1,
+      hasQuotaLeft: false,
+      remainingQuota: 0,
       isSubscribed: false,
       error: error.message,
       dailyLimit: FREE_MESSAGES_PER_DAY,
