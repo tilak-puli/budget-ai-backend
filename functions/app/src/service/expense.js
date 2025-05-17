@@ -8,10 +8,14 @@ const save = async (expense) => {
 };
 
 const generateExpense = async (userId, message, date) => {
-  const expenseObj = await getCompletionForExpense(message);
+  const response = await getCompletionForExpense(message);
   const now = getNowInIndiaTimezone();
 
   try {
+    if (response.error?.message) {
+      return { errorMessage: response.error.message };
+    }
+    const expenseObj = response.expense;
     // Fix this by validating date instead
     // if (!expenseObj.date || expenseObj.date === "null") {
     // Todo: find a way to get proper date from chatgpt
