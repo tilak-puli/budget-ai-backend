@@ -1,56 +1,271 @@
 const { GoogleGenAI, Type, Schema } = require("@google/genai");
 const { v4 } = require("uuid");
-const API_KEY = "AIzaSyA2n-NG0mBfxVfnox6Dpb3jjQgEqZZVHSk";
+const API_KEY = "AIzaSyDMexkXg7tt1KaH9qdga0PvT-TTo8TlSj4";
 const genAI = new GoogleGenAI({
   apiKey: API_KEY,
 });
-const { getNowInIndiaTimezone } = require("./date");
-
-const getCompletionForExpense = async (prompt) => {
-  console.log("Getting completion for expense");
-  const schema = getSchema();
-  const res = await genAI.models.generateContent({
-    model: "gemini-2.0-flash-lite",
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: schema,
+const { getNowInIndiaTimezone } = require("./date.js");
+const expenseQuery = require("../service/expenseQuery.js");
+const Budget = require("../models/budget.js");
+const functionDeclarations = [
+  {
+    name: "getTotalSpent",
+    description: "Get the total amount spent in a category and/or time period.",
+    parameters: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Expense category",
+          enum: Budget.CATEGORIES,
+        },
+        startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+        endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
+      },
     },
+  },
+  {
+    name: "getExpenses",
+    description:
+      "List expenses, optionally filtered by category, date, or amount.",
+    parameters: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Expense category",
+          enum: Budget.CATEGORIES,
+        },
+        startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+        endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
+        minAmount: { type: "number", description: "Minimum amount" },
+        maxAmount: { type: "number", description: "Maximum amount" },
+      },
+    },
+  },
+  {
+    name: "getExpenseSummary",
+    description: "Get a summary of expenses by category or time period.",
+    parameters: {
+      type: "object",
+      properties: {
+        groupBy: {
+          type: "string",
+          description: "Group by 'category', 'month', or 'week'",
+          enum: ["category", "month", "week"],
+        },
+        startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+        endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
+      },
+    },
+  },
+  {
+    name: "getLargestExpense",
+    description: "Find the largest expense in a period or category.",
+    parameters: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Expense category",
+          enum: Budget.CATEGORIES,
+        },
+        startDate: { type: "string", description: "Start date (YYYY-MM-DD)" },
+        endDate: { type: "string", description: "End date (YYYY-MM-DD)" },
+      },
+    },
+  },
+  {
+    name: "getRecurringExpenses",
+    description: "List recurring expenses (subscriptions, rent, etc.).",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "addExpense",
+    description:
+      "Add a new expense. Uses the same schema as the expense response type.",
+    parameters: {
+      type: "object",
+      properties: {
+        description: { type: "string", description: "Expense description" },
+        amount: { type: "number", description: "Expense amount" },
+        category: {
+          type: "string",
+          description: "Expense category",
+          enum: Budget.CATEGORIES,
+        },
+        date: { type: "string", description: "Expense date" },
+      },
+      required: ["amount", "date", "category", "description"],
+    },
+  },
+];
+
+const getCompletionForExpense = async (prompt, userId) => {
+  const schema = getSchema();
+  // 1. First, try to get a direct expense or ask from the model (no function declarations)
+  console.log("[Step 1] Initial user prompt:", prompt);
+  let res = await genAI.models.generateContent({
+    model: "gemini-2.0-flash-lite",
     contents: [
       {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ],
+    config: {
+      responseSchema: schema,
+      responseMimeType: "application/json",
+
+      systemInstruction: {
         role: "model",
         parts: [
           {
-            text: "You are a Financial Assistant that can help me with my expenses. You should respond with either error schema or expense schema. Error schema if user asks something else or it is not related to expense. expense schema if user proovided expense name and amount. other params like category and data can be empty.",
+            text: "You are a Financial Assistant that can help me with my expenses. You should respond with a JSON object. If the user provides an expense, respond with an 'expense' object. If the user asks a question regarding their expenses or their financial data, respond with { isAsk: true, ask: { message: ... } }. Do not call any functions in this step. if he asks anything else, respond with error message.",
           },
         ],
       },
-      {
-        role: "user",
-        parts: [
-          {
-            text: prompt,
-          },
-        ],
-      },
-    ],
+    },
   });
+  console.log("[Step 1] Raw model response:", res.text);
 
   let response;
-
   try {
     response = JSON.parse(res.text || "{}");
   } catch (e) {
-    console.error(e);
-    response = "Failed to parse response";
+    console.log("[Step 1] Error parsing model response:", e);
+    response = {};
   }
-  response.expense.date = new Date(response.expense.date);
+  console.log("[Step 1] Parsed response object:", response);
+  console.log(
+    "[Step 1] Keys present: expense:",
+    !!response.expense,
+    ", isAsk:",
+    !!response.isAsk,
+    ", ask:",
+    !!response.ask,
+    ", error:",
+    !!response.error
+  );
 
-  if (isNaN(response.expense.date.getTime())) {
-    response.expense.date = getNowInIndiaTimezone();
+  // If it's a direct expense, return it
+  if (!response.isAsk && response.expense && response.expense.amount) {
+    console.log("[Step 1] Direct expense detected:", response.expense);
+    response.expense.date = new Date(response.expense.date);
+    if (isNaN(response.expense.date.getTime())) {
+      response.expense.date = getNowInIndiaTimezone();
+    }
+    response.expense._id = v4();
+    console.log("[Step 1] Returning expense:", response.expense);
+    return response;
   }
 
-  response.expense._id = v4();
-  return response;
+  // If it's an ask, proceed to function calling
+  if (response.isAsk) {
+    // 2. Call model again with function declarations and mode ANY
+    const askPrompt = response.ask?.message || prompt;
+    console.log(
+      "[Step 2] Ask detected. Prompt for function calling:",
+      askPrompt
+    );
+    const res2 = await genAI.models.generateContent({
+      model: "gemini-2.0-flash-lite",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: askPrompt }],
+        },
+      ],
+      config: {
+        tools: [{ functionDeclarations }],
+        toolConfig: {
+          functionCallingConfig: {
+            mode: "ANY",
+            allowedFunctionNames: functionDeclarations.map((f) => f.name),
+          },
+        },
+        systemInstruction: {
+          role: "system",
+          parts: [
+            {
+              text: "You are a Financial Assistant that can help me with my expenses. If the user asks a question about their financial data, call the appropriate function. Respond with a function call only.",
+            },
+          ],
+        },
+      },
+    });
+    console.log(
+      "[Step 2] Model function call response:",
+      JSON.stringify(res2.functionCalls)
+    );
+
+    if (res2.functionCalls && res2.functionCalls.length > 0) {
+      const call = res2.functionCalls[0];
+      const fn = expenseQuery[call.name];
+      console.log(
+        "[Step 2] Function to call:",
+        call.name,
+        "with args:",
+        call.args
+      );
+      if (!fn) {
+        console.log("[Step 2] Unknown function:", call.name);
+        return { error: `Unknown function: ${call.name}` };
+      }
+      try {
+        const result = await fn(userId, call.args || {});
+        console.log("[Step 2] Function result:", result);
+        // 3. Call model again, passing the function result for summarization (no function declarations)
+        console.log(
+          "[Step 3] Passing function result to model for summarization:",
+          result
+        );
+        const res3 = await genAI.models.generateContent({
+          model: "gemini-2.0-flash-lite",
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `Here is the result of your query: ${JSON.stringify(result)}. `,
+                },
+              ],
+            },
+          ],
+          config: {
+            systemInstruction: {
+              role: "system",
+              parts: [
+                {
+                  text: "You are a Financial Assistant. Use the function result to answer the user's question. If the user asks a question regarding their expenses or their financial data, use the function result to answer the question. Give the answer directly dont' ask for any more detail or questions",
+                },
+              ],
+            },
+          },
+        });
+        console.log("[Step 3] Model summary response:", res3.text);
+        return { askReply: res3.text };
+      } catch (err) {
+        console.log("[Step 2] Function call failed:", err.message);
+        return { error: `Function call failed: ${err.message}` };
+      }
+    } else {
+      console.log("[Step 2] No function call found for ask.");
+      return { error: "No function call found for ask." };
+    }
+  }
+
+  // Fallback: return error or unknown
+  console.log(
+    "[Fallback] Could not process request. Full response:",
+    response,
+    "Error field:",
+    response.error?.message
+  );
+  return { error: response.error?.message || "Could not process request." };
 };
 
 module.exports = {
@@ -110,14 +325,21 @@ function getSchema() {
       },
     },
   };
-
   return {
     description: "Expense or error",
     type: Type.OBJECT,
     properties: {
       expense: expenseSchema,
       error: errorSchema,
+      isAsk: {
+        type: Type.BOOLEAN,
+        description: "Whether the user asked a question",
+      },
+      ask: {
+        type: Type.STRING,
+        description: "User question",
+      },
     },
-    required: ["expense", "error"],
+    required: ["isAsk", "ask"],
   };
 }

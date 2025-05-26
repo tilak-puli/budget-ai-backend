@@ -8,12 +8,15 @@ const save = async (expense) => {
 };
 
 const generateExpense = async (userId, message, date) => {
-  const response = await getCompletionForExpense(message);
+  const response = await getCompletionForExpense(message, userId);
   const now = getNowInIndiaTimezone();
 
   try {
     if (response.error?.message) {
       return { errorMessage: response.error.message };
+    }
+    if (response.askReply) {
+      return { askReply: response.askReply };
     }
     const expenseObj = response.expense;
     // Fix this by validating date instead
@@ -35,7 +38,7 @@ const generateExpense = async (userId, message, date) => {
     });
     return { expense };
   } catch {
-    return { errorMessage: expenseCompletion };
+    return { errorMessage: response };
   }
 };
 

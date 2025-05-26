@@ -148,11 +148,16 @@ const addAiExpenseWithMessage = async (req, res) => {
     });
   }
 
-  const { expense, errorMessage } = await expenseService.generateExpense(
-    userId,
-    req?.body?.userMessage,
-    req?.body?.date
-  );
+  const { expense, errorMessage, askMessage } =
+    await expenseService.generateExpense(
+      userId,
+      req?.body?.userMessage,
+      req?.body?.date
+    );
+
+  if (askMessage) {
+    return res.status(200).json({ askMessage });
+  }
 
   if (errorMessage) {
     return res.status(401).send({ errorMessage });
@@ -222,10 +227,12 @@ const handleMessage = async (message) => {
 
   send_message(message.from, "Creating expense...");
 
-  const { expense, errorMessage } = await expenseService.generateExpense(
-    userId,
-    messageText
-  );
+  const { expense, errorMessage, askReply } =
+    await expenseService.generateExpense(userId, messageText);
+
+  if (askReply) {
+    return res.status(200).json({ askReply });
+  }
 
   if (errorMessage) {
     console.log("Error in generating expense:" + errorMessage);
