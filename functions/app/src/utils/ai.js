@@ -7,6 +7,7 @@ const genAI = new GoogleGenAI({
 const { getNowInIndiaTimezone } = require("./date.js");
 const expenseQuery = require("../service/expenseQuery.js");
 const Budget = require("../models/budget.js");
+const PROMPTS = require("./prompts.js");
 const functionDeclarations = [
   {
     name: "getTotalSpent",
@@ -124,7 +125,7 @@ const getCompletionForExpense = async (prompt, userId) => {
         role: "model",
         parts: [
           {
-            text: "You are a Financial Assistant that can help me with my expenses. You should respond with a JSON object. If the user provides an expense, respond with an 'expense' object. If the user asks a question regarding their expenses or their financial data, respond with { isAsk: true, ask: { message: ... } }. Do not call any functions in this step. if he asks anything else, respond with error message.",
+            text: PROMPTS.EXPENSE_CLASSIFICATION,
           },
         ],
       },
@@ -160,7 +161,7 @@ const getCompletionForExpense = async (prompt, userId) => {
     }
     response.expense._id = v4();
     console.log("[Step 1] Returning expense:", response.expense);
-    return response;
+    return { expense: response.expense };
   }
 
   // If it's an ask, proceed to function calling
@@ -176,7 +177,11 @@ const getCompletionForExpense = async (prompt, userId) => {
       contents: [
         {
           role: "user",
-          parts: [{ text: askPrompt }],
+          parts: [
+            {
+              text: `${askPrompt}. today's date is ${getNowInIndiaTimezone()}`,
+            },
+          ],
         },
       ],
       config: {
@@ -191,7 +196,7 @@ const getCompletionForExpense = async (prompt, userId) => {
           role: "system",
           parts: [
             {
-              text: "You are a Financial Assistant that can help me with my expenses. If the user asks a question about their financial data, call the appropriate function. Respond with a function call only.",
+              text: PROMPTS.FUNCTION_CALLING,
             },
           ],
         },
@@ -230,7 +235,7 @@ const getCompletionForExpense = async (prompt, userId) => {
               role: "user",
               parts: [
                 {
-                  text: `Here is the result of your query: ${JSON.stringify(result)}. `,
+                  text: PROMPTS.generateSummarizationPrompt(result),
                 },
               ],
             },
@@ -240,7 +245,7 @@ const getCompletionForExpense = async (prompt, userId) => {
               role: "system",
               parts: [
                 {
-                  text: "You are a Financial Assistant. Use the function result to answer the user's question. If the user asks a question regarding their expenses or their financial data, use the function result to answer the question. Give the answer directly dont' ask for any more detail or questions",
+                  text: PROMPTS.RESPONSE_SUMMARIZATION,
                 },
               ],
             },

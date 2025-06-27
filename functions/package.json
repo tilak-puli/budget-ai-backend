@@ -16,6 +16,8 @@
   "dependencies": {
     "@google-cloud/firestore": "^7.3.1",
     "@google/genai": "^0.14.1",
+    "@langchain/core": "^0.3.61",
+    "@langchain/google-genai": "^0.2.13",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -23,12 +25,14 @@
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.2.0",
     "googleapis": "^129.0.0",
+    "langchain": "^0.3.29",
     "mongodb": "^6.2.0",
     "morgan": "^1.10.0",
     "morgan-body": "^2.6.9",
     "openai": "^4.77.4",
     "prettier": "^3.1.0",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.1.0"

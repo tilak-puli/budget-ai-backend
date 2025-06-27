@@ -1,4 +1,7 @@
 const { getCompletionForExpense } = require("../utils/ai.js");
+const {
+  getCompletionForExpenseWithUnifiedLangChain,
+} = require("../utils/langchain/unified-index.js");
 const Expense = require("../models/expense.js");
 const { getNowInIndiaTimezone } = require("../utils/date.js");
 const dbService = require("../db/firestore.js");
@@ -8,7 +11,12 @@ const save = async (expense) => {
 };
 
 const generateExpense = async (userId, message, date) => {
-  const response = await getCompletionForExpense(message, userId);
+  const response = await getCompletionForExpenseWithUnifiedLangChain(
+    message,
+    userId
+  );
+
+  console.log("response in generateExpense", response);
   const now = getNowInIndiaTimezone();
 
   try {
@@ -31,7 +39,6 @@ const generateExpense = async (userId, message, date) => {
 
     const expense = new Expense({
       ...expenseObj,
-      date: expenseObj.date,
       createdAt: now,
       prompt: message,
       userId,
