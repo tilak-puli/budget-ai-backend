@@ -1,28 +1,19 @@
 const { v4 } = require("uuid");
 const { createModel } = require("./modelProvider");
 const { createExpenseTools } = require("./tools");
-const { responseSchema, expenseSchema } = require("./schemas");
+const { expenseSchema } = require("./schemas");
 const {
   EXPENSE_CLASSIFICATION_PROMPT,
   FUNCTION_CALLING_PROMPT,
-  RESPONSE_SUMMARIZATION_PROMPT,
-  createSummarizationPrompt,
 } = require("./prompts");
 const { getNowInIndiaTimezone } = require("../date");
 const { StructuredOutputParser } = require("langchain/output_parsers");
-const {
-  AgentExecutor,
-  createOpenAIFunctionsAgent,
-} = require("langchain/agents");
+require("langchain/agents");
 const {
   ChatPromptTemplate,
   SystemMessagePromptTemplate,
   HumanMessagePromptTemplate,
 } = require("@langchain/core/prompts");
-const {
-  convertToOpenAIFunction,
-} = require("@langchain/core/utils/function_calling");
-
 /**
  * Modern LangChain implementation of the expense agent using direct tool calling
  */
@@ -160,7 +151,6 @@ class ExpenseAgent {
 
         // Execute the tool with the provided arguments
         const toolResult = await tool.invoke(toolCall.args);
-        const parsedResult = JSON.parse(toolResult);
 
         // Format the result into a human-readable response
         const finalResponse = await this.model.invoke([

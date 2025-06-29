@@ -6,15 +6,28 @@ const Expense = require("../models/expense.js");
 const { getNowInIndiaTimezone } = require("../utils/date.js");
 const dbService = require("../db/firestore.js");
 
+// Enable LangChain for all users
+const USE_LANGCHAIN_FOR_ALL = true;
+
+// Users with access to the unified LangChain implementation
+const LANGCHAIN_ENABLED_USERS = ["8SJGODcWICSSfcIDf0FlOE7YduK2"];
+
 const save = async (expense) => {
   return await dbService.save(expense);
 };
 
 const generateExpense = async (userId, message, date) => {
-  const response = await getCompletionForExpenseWithUnifiedLangChain(
-    message,
-    userId
+  // Choose which implementation to use based on user ID or global flag
+  const useLangChain =
+    USE_LANGCHAIN_FOR_ALL || LANGCHAIN_ENABLED_USERS.includes(userId);
+  console.log(
+    `Using ${useLangChain ? "LangChain" : "original"} implementation for user ${userId}`
   );
+
+  // Call the appropriate implementation
+  const response = useLangChain
+    ? await getCompletionForExpenseWithUnifiedLangChain(message, userId)
+    : await getCompletionForExpense(message, userId);
 
   console.log("response in generateExpense", response);
   const now = getNowInIndiaTimezone();

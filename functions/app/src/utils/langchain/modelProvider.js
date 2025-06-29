@@ -13,6 +13,7 @@ function createModel() {
     temperature: config.TEMPERATURE,
     topP: config.TOP_P,
     topK: config.TOP_K,
+    verbose: config.verbose,
   });
 }
 

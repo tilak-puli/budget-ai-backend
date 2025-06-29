@@ -9,7 +9,7 @@ async function runUnifiedExample() {
   const userId = "example-user-id";
 
   console.log("\n===== UNIFIED EXAMPLE 1: DIRECT EXPENSE =====");
-  const expensePrompt = "I spent 500 rupees on dinner yesterday";
+  const expensePrompt = "434 cakes ";
   console.log("User prompt:", expensePrompt);
   const expenseResult = await getCompletionForExpenseWithUnifiedLangChain(
     expensePrompt,
@@ -17,24 +17,24 @@ async function runUnifiedExample() {
   );
   console.log("Result:", JSON.stringify(expenseResult, null, 2));
 
-  console.log("\n===== UNIFIED EXAMPLE 2: ASK QUESTION (TOOL CALLING) =====");
-  const askPrompt = "How much did I spend on food last month?";
-  console.log("User prompt:", askPrompt);
-  const askResult = await getCompletionForExpenseWithUnifiedLangChain(
-    askPrompt,
-    userId
-  );
-  console.log("Result:", JSON.stringify(askResult, null, 2));
+  // console.log("\n===== UNIFIED EXAMPLE 2: ASK QUESTION (TOOL CALLING) =====");
+  // const askPrompt = "How much did I spend on food last month?";
+  // console.log("User prompt:", askPrompt);
+  // const askResult = await getCompletionForExpenseWithUnifiedLangChain(
+  //   askPrompt,
+  //   userId
+  // );
+  // console.log("Result:", JSON.stringify(askResult, null, 2));
 
-  console.log("\n===== UNIFIED EXAMPLE 3: COMPLEX QUERY (TOOL CALLING) =====");
-  const complexPrompt =
-    "What were my largest expenses in the entertainment category this year?";
-  console.log("User prompt:", complexPrompt);
-  const complexResult = await getCompletionForExpenseWithUnifiedLangChain(
-    complexPrompt,
-    userId
-  );
-  console.log("Result:", JSON.stringify(complexResult, null, 2));
+  // console.log("\n===== UNIFIED EXAMPLE 3: COMPLEX QUERY (TOOL CALLING) =====");
+  // const complexPrompt =
+  //   "What were my largest expenses in the entertainment category this year?";
+  // console.log("User prompt:", complexPrompt);
+  // const complexResult = await getCompletionForExpenseWithUnifiedLangChain(
+  //   complexPrompt,
+  //   userId
+  // );
+  // console.log("Result:", JSON.stringify(complexResult, null, 2));
 }
 
 // Run the example if this file is executed directly

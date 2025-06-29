@@ -30,7 +30,8 @@ class UnifiedExpenseAgent {
    * @returns {Object} The processed expense or ask reply
    */
   async processPrompt(prompt, userId) {
-    console.log("[Unified Agent] Processing prompt:", prompt);
+    const cleanedPrompt = prompt.trim();
+    console.log("[Unified Agent] Processing prompt:", cleanedPrompt);
 
     try {
       // Create tools including the special expense classification tool
@@ -53,7 +54,7 @@ class UnifiedExpenseAgent {
       const modelWithTools = this.model.bindTools(tools);
 
       // Invoke the model with the prompt and tools
-      const messages = await chatPrompt.formatMessages({ input: prompt });
+      const messages = await chatPrompt.formatMessages({ input: cleanedPrompt });
       const response = await modelWithTools.invoke(messages);
 
       console.log("[Unified Agent] Model response:", response);
@@ -87,10 +88,9 @@ class UnifiedExpenseAgent {
 
           // Execute the tool with the provided arguments
           const toolResult = await tool.invoke(toolCall.args);
-          const parsedResult = JSON.parse(toolResult);
 
           // Format the result into a human-readable response using the simplified prompt
-          const finalPrompt = `${RESPONSE_SUMMARIZATION_PROMPT}\n\nUser query: "${prompt}"\n\nFunction result: ${toolResult}`;
+          const finalPrompt = `${RESPONSE_SUMMARIZATION_PROMPT}\n\nUser query: "${cleanedPrompt}"\n\nFunction result: ${toolResult}`;
           const finalResponse = await this.model.invoke(finalPrompt);
 
           return { askReply: finalResponse.content };
