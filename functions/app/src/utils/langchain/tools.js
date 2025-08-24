@@ -22,7 +22,7 @@ function createExpenseTools(userId) {
     {
       name: "getTotalSpent",
       description:
-        "Get the total amount spent in a category and/or time period.",
+        "Get the total amount spent in a category and/or time period/yesterday or specific day.",
       schema: z.object({
         category: z
           .enum(Budget.CATEGORIES)
@@ -75,7 +75,8 @@ function createExpenseTools(userId) {
     },
     {
       name: "getExpenseSummary",
-      description: "Get a summary of expenses by category or time period.",
+      description:
+        "Get a summary of expenses by category or time period or yesterday or specific day.",
       schema: z.object({
         groupBy: z
           .enum(["category", "month", "week"])
@@ -98,7 +99,8 @@ function createExpenseTools(userId) {
     },
     {
       name: "getLargestExpense",
-      description: "Find the largest expense in a period or category.",
+      description:
+        "Find the largest expense in a period or category or yesterday or specific day.",
       schema: z.object({
         category: z
           .enum(Budget.CATEGORIES)

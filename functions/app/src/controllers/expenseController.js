@@ -150,11 +150,16 @@ const addAiExpenseWithMessage = async (req, res) => {
     });
   }
 
+  // Extract previous messages from request body
+  // These are required for maintaining conversation context since the agent has no internal state
+  const previousMessages = req.body?.previousMessages || [];
+
   const { expense, errorMessage, askReply } =
     await expenseService.generateExpense(
       userId,
       req?.body?.userMessage,
-      req?.body?.date
+      req?.body?.date,
+      previousMessages
     );
 
   // Increment message count
@@ -245,7 +250,7 @@ const handleMessage = async (message) => {
   const quotaInfo = await userService.checkMessageQuota(userId, isSubscribed);
 
   const { expense, errorMessage, askReply } =
-    await expenseService.generateExpense(userId, messageText);
+    await expenseService.generateExpense(userId, messageText, null, []);
   console.log("expense in handleMessage", { expense, errorMessage, askReply });
 
   // Save user message and AI response to userMessages table

@@ -9,11 +9,21 @@ async function runUnifiedExample() {
   const userId = "example-user-id";
 
   console.log("\n===== UNIFIED EXAMPLE 1: DIRECT EXPENSE =====");
-  const expensePrompt = "434 cakes ";
+  const expensePrompt = "Food";
   console.log("User prompt:", expensePrompt);
   const expenseResult = await getCompletionForExpenseWithUnifiedLangChain(
     expensePrompt,
-    userId
+    userId,
+    [
+      {
+        role: "human",
+        content: "434 cakes ",
+      },
+      {
+        role: "ai",
+        content: `I can help you track your expenses. Could you please provide more details, such as the amount and category for the cakes? For example, \"Cakes 434 Food\" or \"Spent $434 on cakes\".`,
+      },
+    ]
   );
   console.log("Result:", JSON.stringify(expenseResult, null, 2));
 

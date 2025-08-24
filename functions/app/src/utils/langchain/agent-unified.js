@@ -14,6 +14,11 @@ const {
   UNIFIED_SYSTEM_PROMPT,
   RESPONSE_SUMMARIZATION_PROMPT,
 } = require("./unified-prompts");
+const {
+  HumanMessage,
+  AIMessage,
+  SystemMessage,
+} = require("@langchain/core/messages");
 
 /**
  * Unified LangChain implementation of the expense agent using a single model call
@@ -27,11 +32,16 @@ class UnifiedExpenseAgent {
    * Process a user prompt for expense-related queries with a single model call
    * @param {string} prompt - The user's prompt
    * @param {string} userId - The user's ID
+   * @param {Array} previousMessages - Array of previous messages in {role: 'human'|'ai', content: string} format
    * @returns {Object} The processed expense or ask reply
    */
-  async processPrompt(prompt, userId) {
+  async processPrompt(prompt, userId, previousMessages = []) {
     const cleanedPrompt = prompt.trim();
     console.log("[Unified Agent] Processing prompt:", cleanedPrompt);
+    console.log(
+      "[Unified Agent] Previous messages count:",
+      previousMessages.length
+    );
 
     try {
       // Create tools including the special expense classification tool
@@ -42,19 +52,28 @@ class UnifiedExpenseAgent {
 
       // Create the system message with the unified prompt
       const systemPrompt = `${UNIFIED_SYSTEM_PROMPT}\n\nToday's date is ${getNowInIndiaTimezone()}.`;
-      const systemMessage =
-        SystemMessagePromptTemplate.fromTemplate(systemPrompt);
-      const humanMessage = HumanMessagePromptTemplate.fromTemplate("{input}");
-      const chatPrompt = ChatPromptTemplate.fromMessages([
-        systemMessage,
-        humanMessage,
-      ]);
+
+      // Create messages array starting with system message
+      const messages = [new SystemMessage(systemPrompt)];
+
+      // Add previous messages if available
+      if (previousMessages && previousMessages.length > 0) {
+        previousMessages.slice(0, 6).forEach((msg) => {
+          if (msg.role === "human") {
+            messages.push(new HumanMessage(msg.content));
+          } else if (msg.role === "ai") {
+            messages.push(new AIMessage(msg.content));
+          }
+        });
+      }
+
+      // Add current human message
+      messages.push(new HumanMessage(cleanedPrompt));
 
       // Bind tools to the model
       const modelWithTools = this.model.bindTools(tools);
 
-      // Invoke the model with the prompt and tools
-      const messages = await chatPrompt.formatMessages({ input: cleanedPrompt });
+      // Invoke the model with the messages
       const response = await modelWithTools.invoke(messages);
 
       console.log("[Unified Agent] Model response:", response);

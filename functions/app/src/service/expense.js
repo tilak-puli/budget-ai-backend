@@ -16,7 +16,12 @@ const save = async (expense) => {
   return await dbService.save(expense);
 };
 
-const generateExpense = async (userId, message, date) => {
+const generateExpense = async (
+  userId,
+  message,
+  date,
+  previousMessages = []
+) => {
   // Choose which implementation to use based on user ID or global flag
   const useLangChain =
     USE_LANGCHAIN_FOR_ALL || LANGCHAIN_ENABLED_USERS.includes(userId);
@@ -25,8 +30,14 @@ const generateExpense = async (userId, message, date) => {
   );
 
   // Call the appropriate implementation
+  // For LangChain, previousMessages are passed directly to the model to provide conversation context
+  // No internal history state is maintained - the frontend must provide all relevant conversation history
   const response = useLangChain
-    ? await getCompletionForExpenseWithUnifiedLangChain(message, userId)
+    ? await getCompletionForExpenseWithUnifiedLangChain(
+        message,
+        userId,
+        previousMessages
+      )
     : await getCompletionForExpense(message, userId);
 
   console.log("response in generateExpense", response);
