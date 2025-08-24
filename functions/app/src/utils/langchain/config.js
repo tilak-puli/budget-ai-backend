@@ -1,4 +1,4 @@
-const API_KEY = "AIzaSyDMexkXg7tt1KaH9qdga0PvT-TTo8TlSj4"; // Using the same API key from the original implementation
+const API_KEY = process.env.GOOGLE_AI_API_KEY || ""; // Load from environment variable
 
 /**
  * Configuration for LangChain models and tools
